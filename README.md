@@ -57,6 +57,41 @@
 
 ---
 
+## 参考项目与本仓库的改进
+
+本仓库基于 **RunhuaHuang/VisionPower**（[GitHub](https://github.com/RunhuaHuang/VisionPower) / [npm `visionpower`](https://www.npmjs.com/package/visionpower)，v2.4.2）—— 一个轻量、安全、即插即用的图片理解 MCP 服务器，同时提供 MCP 与 Skill 双接入形态，本身不绑定任何模型。感谢原作者的设计，我们在此基础上针对 **DeepSeek 纯文本后端 + Windows + 国内网络** 的实际使用场景做了以下补充与改进：
+
+### 1. Windows 兼容性补丁（核心修复）🩹
+
+- **原 bug**：Windows 上 `lstat()` 返回的 `dev` 恒为 `0`，而 `open()+handle.stat()` 返回真实卷号，导致 `isSameFileVersion()` 的 dev 严格比较**恒失败** —— 任何图片都会报 `image_path changed during read and was rejected for safety`，视觉外挂在 Windows 上完全不可用（Skill 与 MCP 两种形态都中招）。
+- **修复**：任一侧 `dev` 为 `0` 时视为「未知」跳过比较；仅当两侧均为非零且不相等时才判定为跨卷替换（真正需要拒绝的场景）。
+- **封装**：`patches/apply-patch.js` 一键重打补丁，升级 visionpower 后运行 `node patches/apply-patch.js` 即可恢复。
+
+### 2. opencode go 网关适配 🔌
+
+- 原项目内置 18 个云端模型预设（Qwen-VL / GLM / GPT-4o 等），但用户已有 **opencode go** 订阅（OpenAI 兼容网关），不想额外注册服务商。
+- 实测发现该网关中 **`mimo-v2.5` 是唯一支持图片输入**的模型（`mimo-v2.5-pro` / `glm-5.2` / `grok-4.5` 等均不支持多模态），据此配置 `baseUrl=https://opencode.ai/zen/go/v1` + `model=mimo-v2.5`。
+- 桌面管理器自动从 **cc-switch 数据库**读取 OpenCode Go 的 API Key 复用，零额外注册成本。
+
+### 3. 桌面管理器（manager/）🖥️
+
+- Flask + Web UI 的图形化配置界面（浏览器操作，体验类似 cc-switch），原项目只有 `--webui` 的配置控制台。
+- **11 个内置模型预设**一键填入 + 自定义服务商。
+- **一键测试连接 + 视觉盲检测**：发送 1×1 测试图，自动分析模型回复是否承认「看不见图」，防止配到「睁眼瞎」的纯文本模型。
+- **从 cc-switch 导入**：读取 cc-switch 数据库中已配置的 Anthropic 协议服务商，一键复用其 Key。
+
+### 4. 主模型触发规则 📋
+
+- 官方 README 强调「光装 MCP 不够，要在 CLAUDE.md 写硬规则」，但未给出可直接使用的模板。
+- 我们提供了完整的 `CLAUDE.md` 图片处理规则（触发时机 / 使用方式 / 注意事项），并实测验证了「纯文本模型 + 触发规则 + MCP 工具」的完整链路（DeepSeek 主模型成功看懂图片）。
+
+### 5. 开箱即用的仓库形态 📦
+
+- 一键安装脚本、补丁脚本、完整文档（架构图、配置参考、模型推荐表、FAQ）。
+- 实测环境：**Windows 11 + Node 22 + Claude Code（DeepSeek 后端）+ opencode go 网关**，全链路验证通过。
+
+---
+
 ## 快速开始
 
 ### 方式一：一键安装（推荐）
