@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionPower 视觉模型管理器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #0f1115; color: #e6e6e6; min-height: 100vh;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, #6d5efc, #3ec6ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: bold; color: #fff;
+  }
+  h1 { font-size: 20px; font-weight: 600; }
+  .subtitle { font-size: 12px; color: #8b8f98; margin-top: 2px; }
+
+  .card {
+    background: #171a21; border: 1px solid #262b36; border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 { font-size: 15px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #262b36; color: #9aa0aa; font-weight: 400;
+  }
+  .badge.active { background: #1d5c3a; color: #5fd68a; }
+  .badge.err { background: #5c1d1d; color: #ff8a8a; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: #9aa0aa; margin-bottom: 6px; }
+  .field input[type=text], .field input[type=password] {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid #2e3440; background: #0f1115; color: #e6e6e6;
+    font-size: 13px; outline: none;
+  }
+  .field input:focus { border-color: #6d5efc; }
+
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .preset-btn {
+    text-align: left; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid #2e3440; background: #0f1115; color: #c8ccd4;
+    font-size: 12px; cursor: pointer; transition: all .15s;
+  }
+  .preset-btn:hover { border-color: #6d5efc; background: #1c1f2a; }
+  .preset-btn.selected { border-color: #6d5efc; background: #221f3d; color: #cfc6ff; }
+  .preset-btn .note { display: block; font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row .grow { flex: 1; }
+
+  .btn {
+    padding: 10px 20px; border-radius: 8px; border: none;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .15s; background: #2e3440; color: #e6e6e6;
+  }
+  .btn.primary { background: linear-gradient(135deg, #6d5efc, #4f46e5); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.15); }
+  .btn.success { background: #1d5c3a; color: #5fd68a; }
+  .btn.ghost { background: transparent; border: 1px solid #2e3440; color: #9aa0aa; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .cc-list { margin-top: 12px; }
+  .cc-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-radius: 8px; background: #0f1115;
+    border: 1px solid #262b36; margin-bottom: 8px; font-size: 13px;
+  }
+  .cc-item .meta { color: #6b7280; font-size: 11px; margin-top: 3px; }
+  .cc-item .use-btn { padding: 6px 14px; font-size: 12px; }
+
+  .status-box {
+    margin-top: 14px; padding: 12px 14px; border-radius: 8px;
+    font-size: 13px; line-height: 1.6; display: none;
+  }
+  .status-box.ok { display: block; background: #0d2b1d; border: 1px solid #1d5c3a; color: #5fd68a; }
+  .status-box.err { display: block; background: #2b0d0d; border: 1px solid #5c1d1d; color: #ff8a8a; }
+  .status-box.info { display: block; background: #0d1b2b; border: 1px solid #1d3a5c; color: #7ab8ff; }
+
+  .section-desc { font-size: 12px; color: #8b8f98; margin-bottom: 12px; line-height: 1.6; }
+  details { margin-top: 10px; }
+  details summary { cursor: pointer; font-size: 12px; color: #8b8f98; user-select: none; }
+  .import-item { display: flex; gap: 10px; margin-top: 8px; }
+  .import-item select, .import-item input {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid #2e3440;
+    background: #0f1115; color: #e6e6e6; font-size: 12px; flex: 1;
+  }
+  footer { text-align: center; color: #4b4f58; font-size: 11px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">👁</div>
+    <div>
+      <h1>VisionPower 视觉模型管理器</h1>
+      <div class="subtitle">给纯文本模型（DeepSeek）外挂视觉能力 · 模型与服务商自由搭配</div>
+    </div>
+  </header>
+
+  <!-- 当前配置 -->
+  <div class="card">
+    <h2>当前视觉模型 <span class="badge" id="statusBadge">未配置</span></h2>
+    <div id="currentInfo" class="section-desc">尚未配置视觉模型。</div>
+    <div class="row">
+      <button class="btn ghost" onclick="loadCurrent()">刷新</button>
+      <button class="btn ghost" onclick="openVpConfig()">打开 VisionPower 配置目录</button>
+    </div>
+  </div>
+
+  <!-- 预设 -->
+  <div class="card">
+    <h2>内置模型预设</h2>
+    <div class="section-desc">点击选择，自动填充模型 ID 与 API 地址（OpenCode Go 网关会读取 cc-switch 中的 key）。</div>
+    <div class="preset-grid" id="presetGrid"></div>
+  </div>
+
+  <!-- 自定义 -->
+  <div class="card">
+    <h2>自定义服务商</h2>
+    <div class="field">
+      <label>API 地址（Base URL）</label>
+      <input type="text" id="baseUrl" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+    </div>
+    <div class="field">
+      <label>模型 ID</label>
+      <input type="text" id="model" placeholder="qwen3-vl-flash">
+    </div>
+    <div class="field">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-...">
+    </div>
+    <div class="row">
+      <button class="btn" onclick="testApi()">测试连接</button>
+      <button class="btn primary grow" onclick="saveConfig()">保存并应用</button>
+    </div>
+    <div class="status-box" id="testStatus"></div>
+  </div>
+
+  <!-- cc-switch 导入 -->
+  <div class="card">
+    <h2>从 cc-switch 导入 <span class="badge">已有服务商</span></h2>
+    <div class="section-desc">读取 cc-switch 中已配置的 Anthropic 服务商，一键填到下方表单。</div>
+    <div id="ccList" class="cc-list"><div class="section-desc">加载中...</div></div>
+  </div>
+
+  <footer>VisionPower 视觉模型管理器 · 配置保存在 ~/.visionpower/config.json</footer>
+</div>
+
+<script>
+let presets = [];
+const $ = id => document.getElementById(id);
+
+function setStatus(el, type, html) {
+  el.className = 'status-box ' + type;
+  el.innerHTML = html;
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || '请求失败');
+  return d;
+}
+
+async function loadCurrent() {
+  try {
+    const d = await api('/api/config');
+    const c = d.config || {};
+    const badge = $('statusBadge');
+    const info = $('currentInfo');
+    if (c.model && c.apiKey) {
+      badge.textContent = '已配置';
+      badge.className = 'badge active';
+      info.innerHTML = `模型：<b>${c.model}</b><br>API：${c.baseUrl || '（未设置）'}<br>Key：${(c.apiKey || '').slice(0, 8)}...`;
+    } else {
+      badge.textContent = '未配置';
+      badge.className = 'badge err';
+      info.innerHTML = '尚未配置视觉模型。请从下方预设选择，或手动填写服务商后保存。';
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function loadPresets() {
+  try {
+    const d = await api('/api/presets');
+    presets = d.presets || [];
+    const grid = $('presetGrid');
+    grid.innerHTML = '';
+    presets.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn';
+      btn.innerHTML = `<b>${p.name}</b><span class="note">${p.model} · ${p.note || ''}</span>`;
+      btn.onclick = () => {
+        grid.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        $('baseUrl').value = p.base_url;
+        $('model').value = p.model;
+        if (p.api_key) $('apiKey').value = p.api_key;
+        setStatus($('testStatus'), 'info', `已选择预设：${p.name}`);
+      };
+      grid.appendChild(btn);
+    });
+  } catch (e) { console.error(e); }
+}
+
+async function testApi() {
+  const baseUrl = $('baseUrl').value.trim();
+  const model = $('model').value.trim();
+  const apiKey = $('apiKey').value.trim();
+  const box = $('testStatus');
+  if (!baseUrl || !model || !apiKey) {
+    setStatus(box, 'err', '请先填写 API 地址、模型 ID、API Key');
+    return;
+  }
+  box.className = 'status-box info';
+  box.textContent = '测试中（发送 1x1 红色测试图）...';
+  try {
+    const d = await api('/api/test', {
+      method: 'POST',
+      body: JSON.stringify({ baseUrl, model, apiKey }),
+    });
+    setStatus(box, d.vision_ok ? 'ok' : 'err',
+      `模型：${d.model}<br>回答：${d.result || d.note || ''}<br>${d.note || ''}`);
+  } catch (e) {
+    setStatus(box, 'err', '测试失败：' + e.message);
+  }
+}
+
+async function saveConfig() {
+  const cfg = {
+    model: $('model').value.trim(),
+    baseUrl: $('baseUrl').value.trim().replace(/\/chat\/completions$/, ''),
+    apiKey: $('apiKey').value.trim(),
+    maxTokens: 4096,
+    timeoutMs: 90000,
+    maxImageBytes: 20971520,
+    cache: { enabled: true, maxEntries: 32, ttlMs: 1800000 },
+  };
+  const box = $('testStatus');
+  if (!cfg.model || !cfg.apiKey) {
+    setStatus(box, 'err', '模型 ID 和 API Key 必填');
+    return;
+  }
+  try {
+    const d = await api('/api/save', {
+      method: 'POST',
+      body: JSON.stringify(cfg),
+    });
+    setStatus(box, 'ok', `已保存并应用：${d.config.model} → ${d.config.baseUrl}`);
+    loadCurrent();
+  } catch (e) {
+    setStatus(box, 'err', '保存失败：' + e.message);
+  }
+}
+
+async function loadCcList() {
+  try {
+    const d = await api('/api/ccswitch');
+    const list = $('ccList');
+    if (!d.providers || !d.providers.length) {
+      list.innerHTML = '<div class="section-desc">cc-switch 中暂无可用服务商。</div>';
+      return;
+    }
+    list.innerHTML = '';
+    d.providers.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'cc-item';
+      item.innerHTML = `
+        <div>
+          <b>${p.name}</b>
+          <div class="meta">${p.base_url} · 模型 ${p.model || '(默认)'}</div>
+        </div>
+        <button class="btn use-btn" onclick='useCcProvider(${JSON.stringify(JSON.stringify(p))})'>使用此服务商</button>`;
+      list.appendChild(item);
+    });
+  } catch (e) { console.error(e); }
+}
+
+function useCcProvider(jsonStr) {
+  const p = JSON.parse(jsonStr);
+  $('baseUrl').value = p.base_url.replace(/\/anthropic$/, '').replace(/\/v1\/messages$/, '') + '/v1';
+  $('apiKey').value = p.api_key;
+  if (p.model) $('model').value = p.model;
+  setStatus($('testStatus'), 'info', `已从 cc-switch 导入「${p.name}」。提示：Anthropic 协议服务商不一定兼容 OpenAI 视觉协议，建议先点「测试连接」验证。`);
+}
+
+function openVpConfig() {
+  window.open('file:///C:/Users/wangteng/.visionpower/config.json', '_blank');
+}
+
+loadCurrent();
+loadPresets();
+loadCcList();
+</script>
+</body>
+</html>
